@@ -6,7 +6,7 @@ Aplicación web para crear, organizar y dar seguimiento a hábitos personales �
 
 - **Frontend:** Next.js (App Router) + Material UI
 - **Backend:** NestJS
-- **Base de datos:** MongoDB (Mongoose)
+- **Base de datos:** MongoDB (Compass)
 - **Auth:** JWT
 
 ## Estructura del repositorio
@@ -40,4 +40,4 @@ npm run start:dev
 
 ## Autor
 
-Marcelo Rafael Molina Sierra — UNITEC, Computación Teórica / Sistemas Computacionales
+Marcelo Rafael Molina Sierra — UNITEC, Sistemas Computacionales
