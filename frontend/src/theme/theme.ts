@@ -1,44 +1,50 @@
-import { createTheme } from '@mui/material/styles';
-import { Inter } from 'next/font/google';
+import { createTheme } from "@mui/material/styles";
+import { Inter } from "next/font/google";
 
 // Next.js font optimization — self-hosts Inter and exposes it as a CSS variable.
 // Apply `inter.variable` to the <html> or <body> className in app/layout.tsx.
 export const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-inter',
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
 });
 
 // Colores fuera de la paleta MUI, usados en gráficas de Estadísticas/Dashboard
 // (Recharts o MUI X Charts), para que las series respeten el sistema de diseño
 // en vez de usar los colores por defecto de la librería.
-export const chartColors = ['#5EC269', '#4E80EE', '#E9A23B', '#438E8F', '#DD524C'];
+export const chartColors = [
+  "#5EC269",
+  "#4E80EE",
+  "#E9A23B",
+  "#438E8F",
+  "#DD524C",
+];
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: "light",
     primary: {
-      main: '#5EC269',
-      dark: '#438E8F',
-      contrastText: '#FFFFFF',
+      main: "#5EC269",
+      dark: "#438E8F",
+      contrastText: "#FFFFFF",
     },
     secondary: {
-      main: '#4E80EE',
-      contrastText: '#FFFFFF',
+      main: "#4E80EE",
+      contrastText: "#FFFFFF",
     },
-    success: { main: '#4CA154' },
-    warning: { main: '#E9A23B' },
-    error: { main: '#DD524C' },
+    success: { main: "#4CA154" },
+    warning: { main: "#E9A23B" },
+    error: { main: "#DD524C" },
     background: {
-      default: '#F8FAFC',
-      paper: '#FFFFFF',
+      default: "#F8FAFC",
+      paper: "#FFFFFF",
     },
     text: {
-      primary: '#111729',
-      secondary: '#677389',
+      primary: "#111729",
+      secondary: "#677389",
     },
-    divider: 'rgba(17, 23, 41, 0.08)',
+    divider: "rgba(17, 23, 41, 0.08)",
   },
 
   shape: {
@@ -46,26 +52,42 @@ const theme = createTheme({
   },
 
   typography: {
-    fontFamily: 'var(--font-inter), "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontSize: '3rem', lineHeight: 1.17, fontWeight: 700, letterSpacing: '-0.02em' },
-    h2: { fontSize: '2.25rem', lineHeight: 1.22, fontWeight: 700, letterSpacing: '-0.01em' },
-    h3: { fontSize: '1.75rem', lineHeight: 1.28, fontWeight: 600 },
-    h4: { fontSize: '1.5rem', lineHeight: 1.33, fontWeight: 600 },
-    h5: { fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 600 },
-    h6: { fontSize: '1.125rem', lineHeight: 1.44, fontWeight: 600 },
-    subtitle1: { fontSize: '1rem', lineHeight: 1.5, fontWeight: 500 },
-    subtitle2: { fontSize: '0.875rem', lineHeight: 1.43, fontWeight: 500 },
-    body1: { fontSize: '1rem', lineHeight: 1.5, fontWeight: 400 },
-    body2: { fontSize: '0.875rem', lineHeight: 1.43, fontWeight: 400 },
-    caption: { fontSize: '0.75rem', lineHeight: 1.33, fontWeight: 400, color: '#677389' },
+    fontFamily:
+      'var(--font-inter), "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontSize: "3rem",
+      lineHeight: 1.17,
+      fontWeight: 700,
+      letterSpacing: "-0.02em",
+    },
+    h2: {
+      fontSize: "2.25rem",
+      lineHeight: 1.22,
+      fontWeight: 700,
+      letterSpacing: "-0.01em",
+    },
+    h3: { fontSize: "1.75rem", lineHeight: 1.28, fontWeight: 600 },
+    h4: { fontSize: "1.5rem", lineHeight: 1.33, fontWeight: 600 },
+    h5: { fontSize: "1.25rem", lineHeight: 1.4, fontWeight: 600 },
+    h6: { fontSize: "1.125rem", lineHeight: 1.44, fontWeight: 600 },
+    subtitle1: { fontSize: "1rem", lineHeight: 1.5, fontWeight: 500 },
+    subtitle2: { fontSize: "0.875rem", lineHeight: 1.43, fontWeight: 500 },
+    body1: { fontSize: "1rem", lineHeight: 1.5, fontWeight: 400 },
+    body2: { fontSize: "0.875rem", lineHeight: 1.43, fontWeight: 400 },
+    caption: {
+      fontSize: "0.75rem",
+      lineHeight: 1.33,
+      fontWeight: 400,
+      color: "#677389",
+    },
     overline: {
-      fontSize: '0.75rem',
+      fontSize: "0.75rem",
       lineHeight: 1.5,
       fontWeight: 600,
-      letterSpacing: '0.04em',
-      textTransform: 'none', // evita el ALL CAPS por defecto de MUI
+      letterSpacing: "0.04em",
+      textTransform: "none", // evita el ALL CAPS por defecto de MUI
     },
-    button: { fontSize: '0.9375rem', fontWeight: 600, textTransform: 'none' },
+    button: { fontSize: "0.9375rem", fontWeight: 600, textTransform: "none" },
   },
 
   spacing: 8, // 1 unidad = 8px, usar theme.spacing(n) en vez de valores fijos
@@ -73,7 +95,7 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: { backgroundColor: '#F8FAFC' },
+        body: { backgroundColor: "#F8FAFC" },
       },
     },
 
@@ -85,9 +107,14 @@ const theme = createTheme({
           borderRadius: 10,
           paddingInline: 20,
           paddingBlock: 9,
-        },
-        containedPrimary: {
-          '&:hover': { backgroundColor: '#4FAE5A' },
+          variants: [
+            {
+              props: { variant: "contained", color: "primary" },
+              style: {
+                "&:hover": { backgroundColor: "#4FAE5A" },
+              },
+            },
+          ],
         },
       },
     },
@@ -97,16 +124,16 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
-          border: '1px solid rgba(17, 23, 41, 0.08)',
-          boxShadow: 'none',
+          border: "1px solid rgba(17, 23, 41, 0.08)",
+          boxShadow: "none",
         },
       },
     },
 
     MuiPaper: {
       styleOverrides: {
-        root: { backgroundImage: 'none' },
-        elevation1: { boxShadow: '0 1px 2px rgba(17, 23, 41, 0.06)' },
+        root: { backgroundImage: "none" },
+        elevation1: { boxShadow: "0 1px 2px rgba(17, 23, 41, 0.06)" },
       },
     },
 
@@ -122,8 +149,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 10,
-          '& fieldset': { borderColor: 'rgba(17, 23, 41, 0.14)' },
-          '&:hover fieldset': { borderColor: '#5EC269' },
+          "& fieldset": { borderColor: "rgba(17, 23, 41, 0.14)" },
+          "&:hover fieldset": { borderColor: "#5EC269" },
         },
       },
     },
@@ -132,10 +159,10 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#FFFFFF',
-          color: '#111729',
-          boxShadow: 'none',
-          borderBottom: '1px solid rgba(17, 23, 41, 0.08)',
+          backgroundColor: "#FFFFFF",
+          color: "#111729",
+          boxShadow: "none",
+          borderBottom: "1px solid rgba(17, 23, 41, 0.08)",
         },
       },
     },
@@ -143,7 +170,7 @@ const theme = createTheme({
     // Sidebar
     MuiDrawer: {
       styleOverrides: {
-        paper: { borderRight: '1px solid rgba(17, 23, 41, 0.08)' },
+        paper: { borderRight: "1px solid rgba(17, 23, 41, 0.08)" },
       },
     },
 
