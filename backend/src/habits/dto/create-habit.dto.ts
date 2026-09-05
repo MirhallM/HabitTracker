@@ -5,7 +5,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { HabitFrequency, HabitPriority } from '../../generated/prisma/enums.js';
+import { HabitFrequency, HabitPriority } from '@prisma/client';
 
 export class CreateHabitDto {
   @IsString()

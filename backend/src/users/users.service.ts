@@ -6,7 +6,12 @@ import type { UpdateUserDto } from './dto/update-user.dto.js';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { name: string; email: string; password: string }) {
+  create(data: {
+    name: string;
+    email: string;
+    password: string;
+    salt: string;
+  }) {
     return this.prisma.user.create({
       data: { ...data, email: data.email.toLowerCase() },
     });
@@ -29,9 +34,9 @@ export class UsersService {
     return this.prisma.user.update({ where: { id }, data });
   }
 
-  // Quita el hash de contraseña antes de devolver el usuario al cliente
-  toSafeUser<T extends { password: string }>(user: T) {
-    const { password: _password, ...safe } = user;
+  // Quita el hash y la sal antes de devolver el usuario al cliente
+  toSafeUser<T extends { password: string; salt: string }>(user: T) {
+    const { password: _password, salt: _salt, ...safe } = user;
     return safe;
   }
 }

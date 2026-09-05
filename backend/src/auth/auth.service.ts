@@ -23,8 +23,13 @@ export class AuthService {
     if (existing)
       throw new ConflictException('Ya existe una cuenta con ese correo');
 
-    const hashed = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.usersService.create({ ...dto, password: hashed });
+    const salt = await bcrypt.genSalt(SALT_ROUNDS);
+    const hashed = await bcrypt.hash(dto.password, salt);
+    const user = await this.usersService.create({
+      ...dto,
+      password: hashed,
+      salt,
+    });
 
     return this.buildAuthResponse(user.id, user.email, user.name);
   }
