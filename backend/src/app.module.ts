@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { HabitsModule } from './habits/habits.module.js';
+import { HabitRecordsModule } from './habit-records/habit-records.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { HabitsModule } from './habits/habits.module.js';
     UsersModule,
     AuthModule,
     HabitsModule,
+    HabitRecordsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
