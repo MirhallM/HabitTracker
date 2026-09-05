@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { HabitsModule } from './habits/habits.module.js';
 import { HabitRecordsModule } from './habit-records/habit-records.module.js';
+import { StatisticsModule } from './statistics/statistics.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { HabitRecordsModule } from './habit-records/habit-records.module.js';
     AuthModule,
     HabitsModule,
     HabitRecordsModule,
+    StatisticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
