@@ -4,6 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import {
+  computeStreak,
+  periodIndex,
+  type Frequency,
+} from '../common/streaks.js';
 import type { CreateHabitDto } from './dto/create-habit.dto.js';
 import type { UpdateHabitDto } from './dto/update-habit.dto.js';
 
@@ -22,11 +27,32 @@ export class HabitsService {
     });
   }
 
-  findAllForUser(userId: string) {
-    return this.prisma.habit.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  // Devuelve los hábitos con su racha ya calculada, en 2 consultas totales
+  // (no una por hábito).
+  async findAllForUser(userId: string) {
+    const [habits, records] = await Promise.all([
+      this.prisma.habit.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.habitRecord.findMany({
+        where: { userId, completed: true },
+        select: { habitId: true, date: true },
+      }),
+    ]);
+
+    // Agrupa los registros por hábito, en memoria
+    const recordsByHabit = new Map<string, Date[]>();
+    for (const record of records) {
+      const list = recordsByHabit.get(record.habitId) ?? [];
+      list.push(record.date);
+      recordsByHabit.set(record.habitId, list);
+    }
+
+    return habits.map((habit) => ({
+      ...habit,
+      streak: this.buildStreak(habit, recordsByHabit.get(habit.id) ?? []),
+    }));
   }
 
   async findOneForUser(userId: string, habitId: string) {
@@ -40,8 +66,25 @@ export class HabitsService {
     return habit;
   }
 
+  async findOneWithStreak(userId: string, habitId: string) {
+    const habit = await this.findOneForUser(userId, habitId);
+
+    const records = await this.prisma.habitRecord.findMany({
+      where: { habitId, completed: true },
+      select: { date: true },
+    });
+
+    return {
+      ...habit,
+      streak: this.buildStreak(
+        habit,
+        records.map((r) => r.date),
+      ),
+    };
+  }
+
   async update(userId: string, habitId: string, dto: UpdateHabitDto) {
-    await this.findOneForUser(userId, habitId); // valida dueño y existencia
+    await this.findOneForUser(userId, habitId);
     return this.prisma.habit.update({
       where: { id: habitId },
       data: {
@@ -60,5 +103,27 @@ export class HabitsService {
     await this.findOneForUser(userId, habitId);
     await this.prisma.habit.delete({ where: { id: habitId } });
     return { deleted: true };
+  }
+
+  // Traduce las fechas de cumplimiento a períodos según la frecuencia
+  // del hábito, y calcula la racha sobre esos períodos.
+  private buildStreak(
+    habit: {
+      frequency: string;
+      intervalDays: number | null;
+      startDate: Date;
+    },
+    dates: Date[],
+  ) {
+    const options = {
+      intervalDays: habit.intervalDays,
+      startDate: habit.startDate,
+    };
+    const frequency = habit.frequency as Frequency;
+
+    const periods = dates.map((date) => periodIndex(date, frequency, options));
+    const currentPeriod = periodIndex(new Date(), frequency, options);
+
+    return computeStreak(periods, currentPeriod);
   }
 }

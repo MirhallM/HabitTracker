@@ -39,8 +39,9 @@ model Habit {
   name        String
   description String?
   category    String?
-  frequency   HabitFrequency @default(daily)
-  priority    HabitPriority  @default(medium)
+  frequency    HabitFrequency @default(daily)
+  priority     HabitPriority  @default(medium)
+  intervalDays Int?
   startDate   DateTime       @default(now())
   endDate     DateTime?
   active      Boolean        @default(true)

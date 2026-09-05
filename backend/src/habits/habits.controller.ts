@@ -31,7 +31,7 @@ export class HabitsController {
 
   @Get(':id')
   findOne(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
-    return this.habitsService.findOneForUser(user.userId, id);
+    return this.habitsService.findOneWithStreak(user.userId, id);
   }
 
   @Patch(':id')

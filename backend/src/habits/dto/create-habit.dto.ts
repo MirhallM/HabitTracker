@@ -1,9 +1,12 @@
 import {
   IsDateString,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
+  Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { HabitFrequency, HabitPriority } from '@prisma/client';
 
@@ -23,6 +26,14 @@ export class CreateHabitDto {
   @IsOptional()
   @IsEnum(HabitFrequency)
   frequency?: HabitFrequency;
+
+  // Solo se valida si la frecuencia es 'custom'; ahí sí es obligatorio.
+  @ValidateIf((dto: CreateHabitDto) => dto.frequency === HabitFrequency.custom)
+  @IsInt()
+  @Min(2, {
+    message: 'intervalDays debe ser 2 o más (para 1 día usa frequency: daily)',
+  })
+  intervalDays?: number;
 
   @IsOptional()
   @IsEnum(HabitPriority)
