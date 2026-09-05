@@ -6,15 +6,20 @@ import { AppModule } from './app.module.js';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Aplica automáticamente los decoradores de class-validator (@IsEmail, etc.)
-  // a cada request que llegue, en todos los controllers.
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // borra cualquier campo que no esté declarado en el DTO
-      forbidNonWhitelisted: true, // y si llega un campo extra, rechaza el request en vez de solo ignorarlo
-      transform: true, // convierte el JSON crudo a una instancia real de la clase DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
+
+  // Sin esto, el navegador bloquea las llamadas del frontend (puerto 3000)
+  // al backend (puerto 3001) por política de origen cruzado.
+  app.enableCors({
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    credentials: true,
+  });
 
   await app.listen(process.env.PORT ?? 3001);
 }
