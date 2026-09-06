@@ -58,9 +58,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <TaskAltRounded sx={{ color: "primary.main" }} />
               <Typography
-                variant="h6"
+                variant="body1"
                 component="span"
-                sx={{ display: { xs: "none", sm: "block" } }}
+                sx={{ fontWeight: 600, display: { xs: "none", sm: "block" } }}
               >
                 Habit Tracker
               </Typography>

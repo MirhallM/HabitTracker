@@ -54,7 +54,11 @@ export default function HomePage() {
           <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <TaskAltRounded sx={{ color: "primary.main" }} />
-              <Typography variant="h6" component="span">
+              <Typography
+                variant="body1"
+                component="span"
+                sx={{ fontWeight: 600 }}
+              >
                 Habit Tracker
               </Typography>
             </Stack>
@@ -78,7 +82,7 @@ export default function HomePage() {
           <Stack spacing={4} sx={{ flex: 1 }}>
             <Stack spacing={2}>
               <Typography
-                variant="h2"
+                variant="h1"
                 component="h1"
                 sx={{ fontSize: { xs: "2.25rem", md: "3rem" } }}
               >
@@ -124,12 +128,8 @@ export default function HomePage() {
       <Divider />
       <Box component="footer" sx={{ py: 3 }}>
         <Container maxWidth="lg">
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: "center" }}
-          >
-            Habit Tracker — Proyecto de Experiencia de Usuario, UNITEC
+          <Typography variant="h3" component="h1">
+            Habit Tracker
           </Typography>
         </Container>
       </Box>

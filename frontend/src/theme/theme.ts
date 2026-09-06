@@ -63,7 +63,7 @@ const theme = createTheme({
     h2: {
       fontSize: "2.25rem",
       lineHeight: 1.22,
-      fontWeight: 700,
+      fontWeight: 600,
       letterSpacing: "-0.01em",
     },
     h3: { fontSize: "1.75rem", lineHeight: 1.28, fontWeight: 600 },
@@ -107,14 +107,6 @@ const theme = createTheme({
           borderRadius: 10,
           paddingInline: 20,
           paddingBlock: 9,
-          variants: [
-            {
-              props: { variant: "contained", color: "primary" },
-              style: {
-                "&:hover": { backgroundColor: "#4FAE5A" },
-              },
-            },
-          ],
         },
       },
     },

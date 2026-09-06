@@ -101,7 +101,15 @@ export class HabitsService {
 
   async remove(userId: string, habitId: string) {
     await this.findOneForUser(userId, habitId);
-    await this.prisma.habit.delete({ where: { id: habitId } });
+
+    // Los registros tienen una relación obligatoria con el hábito, así que
+    // hay que borrarlos primero. $transaction garantiza que ambas operaciones
+    // ocurran juntas: si una falla, ninguna se aplica.
+    await this.prisma.$transaction([
+      this.prisma.habitRecord.deleteMany({ where: { habitId } }),
+      this.prisma.habit.delete({ where: { id: habitId } }),
+    ]);
+
     return { deleted: true };
   }
 

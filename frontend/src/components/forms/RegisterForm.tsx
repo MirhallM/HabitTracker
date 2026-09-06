@@ -72,7 +72,7 @@ export default function RegisterForm() {
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={3}>
         <Stack spacing={0.5}>
-          <Typography variant="h5" component="h2">
+          <Typography variant="h3" component="h2">
             Crea tu cuenta
           </Typography>
           <Typography variant="body2" color="text.secondary">
