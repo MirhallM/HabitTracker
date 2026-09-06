@@ -32,10 +32,13 @@ export function deleteHabit(id: string) {
   return api<{ deleted: boolean }>(`/habits/${id}`, { method: "DELETE" });
 }
 
-export function setHabitStatus(id: string, active: boolean) {
-  return api<Habit>(`/habits/${id}/status`, {
+// Archivar (true) retira el hábito de la lista activa conservando todo su
+// historial; restaurar (false) lo devuelve. Es reversible, a diferencia de
+// deleteHabit, que sí destruye los registros.
+export function setHabitArchived(id: string, archived: boolean) {
+  return api<Habit>(`/habits/${id}/archive`, {
     method: "PATCH",
-    body: { active },
+    body: { archived },
   });
 }
 

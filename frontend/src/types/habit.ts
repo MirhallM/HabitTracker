@@ -19,7 +19,9 @@ export type Habit = {
   intervalDays: number | null;
   startDate: string;
   endDate: string | null;
-  active: boolean;
+  // null = activo. Es la fecha en que se archivó, no un booleano: así el
+  // backend puede saber si estaba archivado en un día concreto del pasado.
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
   streak: Streak;

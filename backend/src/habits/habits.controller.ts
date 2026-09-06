@@ -13,6 +13,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { HabitsService } from './habits.service.js';
 import { CreateHabitDto } from './dto/create-habit.dto.js';
 import { UpdateHabitDto } from './dto/update-habit.dto.js';
+import { ArchiveHabitDto } from './dto/archive-habit.dto.js';
 
 @Controller('habits')
 @UseGuards(JwtAuthGuard)
@@ -43,13 +44,13 @@ export class HabitsController {
     return this.habitsService.update(user.userId, id, dto);
   }
 
-  @Patch(':id/status')
-  setStatus(
+  @Patch(':id/archive')
+  setArchived(
     @CurrentUser() user: { userId: string },
     @Param('id') id: string,
-    @Body('active') active: boolean,
+    @Body() dto: ArchiveHabitDto,
   ) {
-    return this.habitsService.setStatus(user.userId, id, active);
+    return this.habitsService.setArchived(user.userId, id, dto.archived);
   }
 
   @Delete(':id')

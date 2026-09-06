@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 export type StatsSummary = {
   totalHabits: number;
   activeHabits: number;
-  finishedHabits: number;
+  archivedHabits: number;
   dueToday: number;
   completedDueToday: number;
   completionRate: number;

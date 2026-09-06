@@ -45,7 +45,9 @@ model Habit {
   intervalDays Int?
   startDate   DateTime       @default(now())
   endDate     DateTime?
-  active      Boolean        @default(true)
+  // null = activo. Guardamos la fecha, no un booleano, para poder responder
+  // "¿estaba archivado el día X?" y no reescribir el historial al archivar.
+  archivedAt  DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 

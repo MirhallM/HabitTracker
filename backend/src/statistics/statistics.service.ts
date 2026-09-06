@@ -15,6 +15,22 @@ function startOfDay(value: string | Date) {
   return d;
 }
 
+// ¿Este hábito correspondía en ese día? Ya había iniciado, todavía no había
+// terminado, y aún no estaba archivado.
+//
+// Archivar NO reescribe el pasado: como guardamos la fecha de archivado y no
+// un booleano, los días anteriores siguen contando exactamente igual y el
+// hábito solo deja de contar desde el día en que se archivó en adelante.
+function countsOnDay(
+  habit: { startDate: Date; endDate: Date | null; archivedAt: Date | null },
+  dayStart: Date,
+) {
+  if (startOfDay(habit.startDate) > dayStart) return false;
+  if (habit.endDate && startOfDay(habit.endDate) < dayStart) return false;
+  if (habit.archivedAt && startOfDay(habit.archivedAt) <= dayStart) return false;
+  return true;
+}
+
 // Clave legible "YYYY-MM-DD" en hora local, para las gráficas.
 function dayKey(date: Date) {
   const d = startOfDay(date);
@@ -40,7 +56,7 @@ export class StatisticsService {
       }),
     ]);
 
-    const active = habits.filter((h) => h.active);
+    const active = habits.filter((h) => h.archivedAt === null);
     const today = startOfDay(new Date());
 
     // Un hábito "vence hoy" si hoy es el último día de su período actual.
@@ -75,7 +91,7 @@ export class StatisticsService {
     return {
       totalHabits: habits.length,
       activeHabits: active.length,
-      finishedHabits: habits.length - active.length,
+      archivedHabits: habits.length - active.length,
       dueToday: dueToday.length,
       completedDueToday,
       completionRate,
@@ -112,15 +128,24 @@ export class StatisticsService {
       }),
       this.prisma.habit.findMany({
         where: { userId, frequency: HabitFrequency.daily },
-        select: { id: true, startDate: true, endDate: true },
+        select: {
+          id: true,
+          startDate: true,
+          endDate: true,
+          archivedAt: true,
+        },
       }),
     ]);
 
-    const dailyIds = new Set(dailyHabits.map((h) => h.id));
+    const dailyById = new Map(dailyHabits.map((h) => [h.id, h]));
 
+    // Los cumplimientos se filtran con el mismo criterio que los esperados,
+    // para que nunca haya un "3 de 2" en el resumen semanal.
     const counts = new Map<string, number>();
     for (const record of records) {
-      if (!dailyIds.has(record.habitId)) continue;
+      const habit = dailyById.get(record.habitId);
+      if (!habit) continue;
+      if (!countsOnDay(habit, startOfDay(record.date))) continue;
       const key = dayKey(record.date);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
@@ -133,13 +158,9 @@ export class StatisticsService {
       const dayStart = startOfDay(d);
       const key = dayKey(d);
 
-      // Un hábito "correspondía" ese día si ya había iniciado
-      // y todavía no había terminado.
-      const expected = dailyHabits.filter((habit) => {
-        if (startOfDay(habit.startDate) > dayStart) return false;
-        if (habit.endDate && startOfDay(habit.endDate) < dayStart) return false;
-        return true;
-      }).length;
+      const expected = dailyHabits.filter((habit) =>
+        countsOnDay(habit, dayStart),
+      ).length;
 
       result.push({ date: key, completed: counts.get(key) ?? 0, expected });
     }

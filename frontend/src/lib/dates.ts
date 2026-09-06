@@ -1,3 +1,5 @@
+import type { HabitFrequency } from "@/types/habit";
+
 const MS_PER_DAY = 86_400_000;
 
 export function startOfDay(value: Date | string) {
@@ -67,6 +69,14 @@ export function formatLongDate(value: Date | string) {
   return capitalize(text);
 }
 
+// "12 sept" — compacto, para chips y etiquetas secundarias.
+export function formatShortDate(value: Date | string) {
+  return new Date(value).toLocaleDateString("es-HN", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
 // Evita el "1 días"
 export function pluralizeDays(count: number) {
   return count === 1 ? "1 día" : `${count} días`;
@@ -92,6 +102,25 @@ export function customPeriodEnd(startDate: string, intervalDays: number) {
   return windowStart + intervalDays - 1;
 }
 
+// Días que faltan para que se cierre el período actual del hábito.
+// 0 = vence hoy. Unifica las tres frecuencias en un solo criterio para que
+// filtrar y ordenar por vencimiento no reimplemente el cálculo.
+export function daysUntilPeriodEnd(habit: {
+  frequency: HabitFrequency;
+  intervalDays: number | null;
+  startDate: string;
+}) {
+  if (habit.frequency === "weekly") return daysLeftInWeek(new Date()) - 1;
+
+  if (habit.frequency === "custom") {
+    // Mismo respaldo que el backend: sin intervalo, la ventana es de 1 día.
+    const interval = habit.intervalDays ?? 1;
+    return customPeriodEnd(habit.startDate, interval) - dayIndexOf(new Date());
+  }
+
+  return 0; // daily: siempre vence hoy
+}
+
 // Etiqueta para hábitos personalizados: cuánto queda de su ventana actual.
 export function customDueLabel(
   startDate: string,
@@ -100,8 +129,11 @@ export function customDueLabel(
 ) {
   if (!intervalDays) return null;
 
-  const lastDay = customPeriodEnd(startDate, intervalDays);
-  const daysLeft = lastDay - dayIndexOf(new Date());
+  const daysLeft = daysUntilPeriodEnd({
+    frequency: "custom",
+    intervalDays,
+    startDate,
+  });
 
   if (done) {
     // Ya cumplido: lo útil es cuándo vuelve a tocar

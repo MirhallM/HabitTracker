@@ -13,6 +13,7 @@ import Snackbar from "@mui/material/Snackbar";
 import AddRounded from "@mui/icons-material/AddRounded";
 import ChecklistRounded from "@mui/icons-material/ChecklistRounded";
 import Link from "@/components/Link";
+import EmptyState from "@/components/EmptyState";
 import TodayProgressCard from "@/components/dashboard/TodayProgressCard";
 import StreakCard from "@/components/dashboard/StreakCard";
 import HabitGroupCard from "@/components/dashboard/HabitGroupCard";
@@ -31,11 +32,9 @@ import {
   daysLeftLabel,
   daysLeftInWeek,
 } from "@/lib/dates";
+import { comparePriority } from "@/lib/habit-meta";
 import { ApiError } from "@/lib/api";
 import type { Habit } from "@/types/habit";
-
-// Menor número = mayor prioridad al ordenar
-const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 // Pendientes primero; dentro de cada bloque, por prioridad.
 function sortHabits(list: Habit[]) {
@@ -43,7 +42,7 @@ function sortHabits(list: Habit[]) {
     const aDone = a.streak.completedInCurrentPeriod ? 1 : 0;
     const bDone = b.streak.completedInCurrentPeriod ? 1 : 0;
     if (aDone !== bDone) return aDone - bDone;
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
+    return comparePriority(a.priority, b.priority);
   });
 }
 
@@ -109,7 +108,7 @@ export default function DashboardPage() {
     }
   }
 
-  const activeHabits = habits.filter((h) => h.active);
+  const activeHabits = habits.filter((h) => h.archivedAt === null);
   const now = new Date();
 
   const daysLeft = daysLeftInWeek(now);
@@ -229,24 +228,21 @@ export default function DashboardPage() {
           {groups.length === 0 ? (
             <Card>
               <CardContent sx={{ textAlign: "center", py: 6 }}>
-                <ChecklistRounded
-                  sx={{ fontSize: 44, color: "text.disabled", mb: 1.5 }}
+                <EmptyState
+                  size="sm"
+                  icon={ChecklistRounded}
+                  description="No tienes hábitos activos todavía."
+                  action={
+                    <Button
+                      component={Link}
+                      href="/habits/new"
+                      variant="contained"
+                      startIcon={<AddRounded />}
+                    >
+                      Crear mi primer hábito
+                    </Button>
+                  }
                 />
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  No tienes hábitos activos todavía.
-                </Typography>
-                <Button
-                  component={Link}
-                  href="/habits/new"
-                  variant="contained"
-                  startIcon={<AddRounded />}
-                >
-                  Crear mi primer hábito
-                </Button>
               </CardContent>
             </Card>
           ) : (

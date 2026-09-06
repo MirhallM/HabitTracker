@@ -74,7 +74,7 @@ export default function ProfileDialog({ open, onClose }: Props) {
 
   const totals = [
     { label: "Activos", value: stats?.activeHabits },
-    { label: "Finalizados", value: stats?.finishedHabits },
+    { label: "Archivados", value: stats?.archivedHabits },
     { label: "Total creados", value: stats?.totalHabits },
   ];
 

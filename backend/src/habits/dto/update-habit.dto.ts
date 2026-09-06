@@ -1,9 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsBoolean, IsOptional } from 'class-validator';
 import { CreateHabitDto } from './create-habit.dto.js';
 
-export class UpdateHabitDto extends PartialType(CreateHabitDto) {
-  @IsOptional()
-  @IsBoolean()
-  active?: boolean;
-}
+// Archivar no pasa por aquí: tiene su propio endpoint y DTO, para que
+// "editar un hábito" y "retirarlo de la lista" no se mezclen.
+export class UpdateHabitDto extends PartialType(CreateHabitDto) {}

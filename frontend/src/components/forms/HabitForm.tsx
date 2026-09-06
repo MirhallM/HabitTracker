@@ -12,22 +12,11 @@ import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import { habitSchema } from "@/schemas/habit.schema";
 import { createHabit, updateHabit } from "@/services/habit.service";
+import { FREQUENCY_OPTIONS, PRIORITY_OPTIONS } from "@/lib/habit-meta";
 import { ApiError } from "@/lib/api";
 import type { Habit } from "@/types/habit";
 
 type FieldErrors = Record<string, string[] | undefined>;
-
-const frequencies = [
-  { value: "daily", label: "Diario" },
-  { value: "weekly", label: "Semanal" },
-  { value: "custom", label: "Cada cierto número de días" },
-];
-
-const priorities = [
-  { value: "low", label: "Baja" },
-  { value: "medium", label: "Media" },
-  { value: "high", label: "Alta" },
-];
 
 // Si recibe un hábito, edita; si no, crea.
 export default function HabitForm({ habit }: { habit?: Habit }) {
@@ -140,7 +129,7 @@ export default function HabitForm({ habit }: { habit?: Habit }) {
             disabled={isSubmitting}
             fullWidth
           >
-            {frequencies.map((option) => (
+            {FREQUENCY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>
@@ -169,7 +158,7 @@ export default function HabitForm({ habit }: { habit?: Habit }) {
             disabled={isSubmitting}
             fullWidth
           >
-            {priorities.map((option) => (
+            {PRIORITY_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
               </MenuItem>

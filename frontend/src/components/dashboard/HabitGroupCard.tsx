@@ -11,19 +11,8 @@ import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import LocalFireDepartmentRounded from "@mui/icons-material/LocalFireDepartmentRounded";
 import { completedLabel, customDueLabel } from "@/lib/dates";
+import { priorityMeta } from "@/lib/habit-meta";
 import type { Habit } from "@/types/habit";
-
-const priorityColor: Record<string, string> = {
-  high: "error.main",
-  medium: "warning.main",
-  low: "text.disabled",
-};
-
-const priorityLabel: Record<string, string> = {
-  high: "Prioridad alta",
-  medium: "Prioridad media",
-  low: "Prioridad baja",
-};
 
 type RowProps = {
   habit: Habit;
@@ -33,6 +22,7 @@ type RowProps = {
 
 function HabitRow({ habit, onToggle, isBusy }: RowProps) {
   const done = habit.streak.completedInCurrentPeriod;
+  const priority = priorityMeta(habit.priority);
 
   // Solo los personalizados llevan etiqueta de vencimiento: los diarios
   // se entienden solos y los semanales la tienen a nivel de grupo.
@@ -53,13 +43,13 @@ function HabitRow({ habit, onToggle, isBusy }: RowProps) {
         size="small"
       />
 
-      <Tooltip title={priorityLabel[habit.priority]}>
+      <Tooltip title={priority.longLabel}>
         <Box
           sx={{
             width: 8,
             height: 8,
             borderRadius: "50%",
-            bgcolor: priorityColor[habit.priority],
+            bgcolor: priority.dotColor,
             flexShrink: 0,
           }}
         />

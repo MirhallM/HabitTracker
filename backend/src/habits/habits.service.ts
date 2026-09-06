@@ -95,8 +95,15 @@ export class HabitsService {
     });
   }
 
-  setStatus(userId: string, habitId: string, active: boolean) {
-    return this.update(userId, habitId, { active });
+  // Archivar es reversible y NO toca los registros: solo marca cuándo se
+  // retiró el hábito. Restaurar (archived: false) limpia la marca y lo
+  // devuelve a la lista activa con todo su historial intacto.
+  async setArchived(userId: string, habitId: string, archived: boolean) {
+    await this.findOneForUser(userId, habitId);
+    return this.prisma.habit.update({
+      where: { id: habitId },
+      data: { archivedAt: archived ? new Date() : null },
+    });
   }
 
   async remove(userId: string, habitId: string) {
