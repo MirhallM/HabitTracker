@@ -1,7 +1,9 @@
 "use client";
 
+import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import Grow from "@mui/material/Grow";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -18,7 +20,8 @@ export default function TodayProgressCard({
   total,
   percent,
 }: Props) {
-  // Solo celebramos si de verdad había algo que hacer y se hizo todo
+  // Nada vence hoy: no es un fracaso, es un día libre
+  const nothingDue = total === 0;
   const allDone = total > 0 && completed >= total;
 
   return (
@@ -28,44 +31,81 @@ export default function TodayProgressCard({
           Progreso de hoy
         </Typography>
 
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: "baseline", mt: 1 }}
-        >
-          <Typography variant="h2" component="p" sx={{ fontSize: "2.25rem" }}>
-            {completed}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            de {total}
-          </Typography>
-        </Stack>
-
-        <Typography variant="caption" color="text.secondary">
-          hábitos completados
-        </Typography>
-
-        <LinearProgress
-          variant="determinate"
-          value={Math.min(percent, 100)}
-          color="success"
-          sx={{ mt: 1.5, mb: 1 }}
-        />
-
-        {allDone ? (
-          <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-            <CelebrationRounded sx={{ fontSize: 18, color: "success.main" }} />
+        {nothingDue ? (
+          <Stack sx={{ mt: 1 }}>
+            <Typography variant="h2" component="p" sx={{ fontSize: "1.5rem" }}>
+              Sin pendientes
+            </Typography>
             <Typography
               variant="caption"
-              sx={{ color: "success.main", fontWeight: 600 }}
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
             >
-              ¡Todo listo por hoy!
+              Hoy no vence ningún hábito
             </Typography>
           </Stack>
         ) : (
-          <Typography variant="caption" color="text.secondary">
-            {percent}% completado
-          </Typography>
+          <>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: "baseline", mt: 1 }}
+            >
+              <Typography
+                variant="h2"
+                component="p"
+                sx={{
+                  fontSize: "2.25rem",
+                  color: allDone ? "success.main" : "text.primary",
+                  transition: "color 300ms ease",
+                }}
+              >
+                {completed}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                de {total}
+              </Typography>
+            </Stack>
+
+            <Typography variant="caption" color="text.secondary">
+              {completed === 1 ? "hábito completado" : "hábitos completados"}
+            </Typography>
+
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(percent, 100)}
+              color="success"
+              sx={{ mt: 1.5, mb: 1 }}
+            />
+
+            {/* minHeight reserva el espacio: el mensaje aparece sin
+                que la tarjeta cambie de altura */}
+            <Box sx={{ minHeight: 22, display: "flex", alignItems: "center" }}>
+              {allDone ? (
+                <Grow in timeout={400}>
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    sx={{ alignItems: "center" }}
+                  >
+                    <CelebrationRounded
+                      sx={{ fontSize: 18, color: "success.main" }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "success.main", fontWeight: 600 }}
+                    >
+                      ¡Todo listo por hoy!
+                    </Typography>
+                  </Stack>
+                </Grow>
+              ) : (
+                <Typography variant="caption" color="text.secondary">
+                  {percent}% completado
+                </Typography>
+              )}
+            </Box>
+          </>
         )}
       </CardContent>
     </Card>

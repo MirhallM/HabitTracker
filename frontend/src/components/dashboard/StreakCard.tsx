@@ -12,14 +12,22 @@ import { pluralizeDays } from "@/lib/dates";
 type Props = {
   current: number;
   best: number;
-  // Si aún no se cumple nada hoy, la racha se muestra apagada
   activeToday: boolean;
 };
 
 export default function StreakCard({ current, best, activeToday }: Props) {
   return (
-    <Card sx={{ flex: 1 }}>
-      <CardContent>
+    <Card sx={{ flex: 1, display: "flex" }}>
+      {/* flex + justifyContent center: el contenido queda centrado
+          verticalmente aunque la tarjeta vecina sea más alta */}
+      <CardContent
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         <Stack
           direction="row"
           spacing={2}

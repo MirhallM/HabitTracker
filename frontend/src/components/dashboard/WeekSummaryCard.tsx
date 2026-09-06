@@ -6,6 +6,7 @@ import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
+import ButtonBase from "@mui/material/ButtonBase";
 import { formatWeekRange, startOfDay } from "@/lib/dates";
 import type { DailyCompletion } from "@/services/stats.service";
 
@@ -14,41 +15,44 @@ const WEEKDAY_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
 type DayStatus = "full" | "partial" | "empty" | "future";
 
-type Props = {
-  days: DailyCompletion[];
-  // Hábitos diarios activos: la única referencia fiable de "cuántos
-  // tocaban" un día cualquiera. Los semanales no tienen día fijo.
-  dailyHabitCount: number;
+const dotStyle: Record<DayStatus, object> = {
+  full: { bgcolor: "success.main", borderColor: "success.main" },
+  partial: {
+    bgcolor: "transparent",
+    borderColor: "success.main",
+    // Media luna: comunica "a medias" sin introducir un color nuevo
+    backgroundImage: (theme: { palette: { success: { main: string } } }) =>
+      `linear-gradient(to top, ${theme.palette.success.main} 50%, transparent 50%)`,
+  },
+  empty: { bgcolor: "transparent", borderColor: "divider" },
+  future: { bgcolor: "transparent", borderColor: "divider", opacity: 0.4 },
 };
 
-export default function WeekSummaryCard({ days, dailyHabitCount }: Props) {
+const statusLabel: Record<DayStatus, string> = {
+  full: "Día completo",
+  partial: "Parcialmente cumplido",
+  empty: "Sin actividad",
+  future: "Aún no llega",
+};
+
+export default function WeekSummaryCard({ days }: { days: DailyCompletion[] }) {
   const todayKey = startOfDay(new Date()).toISOString().slice(0, 10);
 
   function statusFor(day: DailyCompletion): DayStatus {
     // Un día que todavía no llega no es un fracaso
     if (day.date > todayKey) return "future";
-    if (day.completed === 0) return "empty";
-    if (dailyHabitCount === 0) return "full";
-    return day.completed >= dailyHabitCount ? "full" : "partial";
+    if (day.expected === 0) return "empty";
+    if (day.completed >= day.expected) return "full";
+    return day.completed > 0 ? "partial" : "empty";
   }
 
   const statuses = days.map(statusFor);
-  const elapsed = statuses.filter((s) => s !== "future").length;
+
+  // Solo cuentan los días transcurridos que tenían hábitos asignados
+  const counted = days.filter(
+    (d, i) => statuses[i] !== "future" && d.expected > 0,
+  ).length;
   const fullDays = statuses.filter((s) => s === "full").length;
-
-  const styleFor: Record<DayStatus, object> = {
-    full: { bgcolor: "success.main", borderColor: "success.main" },
-    partial: { bgcolor: "success.light", borderColor: "success.main" },
-    empty: { bgcolor: "transparent", borderColor: "divider" },
-    future: { bgcolor: "transparent", borderColor: "divider", opacity: 0.4 },
-  };
-
-  const labelFor: Record<DayStatus, string> = {
-    full: "Día completo",
-    partial: "Parcialmente cumplido",
-    empty: "Sin actividad",
-    future: "Aún no llega",
-  };
 
   return (
     <Card>
@@ -75,42 +79,59 @@ export default function WeekSummaryCard({ days, dailyHabitCount }: Props) {
             const status = statuses[index];
             const isToday = day.date === todayKey;
 
+            const detail =
+              status === "future"
+                ? statusLabel.future
+                : `${statusLabel[status]} · ${day.completed} de ${day.expected}`;
+
             return (
               <Tooltip
                 key={day.date}
-                title={`${labelFor[status]} · ${day.completed} completados`}
+                title={detail}
+                // enterTouchDelay 0: en móvil se muestra al tocar,
+                // sin esperar a una pulsación larga
+                enterTouchDelay={0}
+                leaveTouchDelay={2500}
               >
-                <Stack spacing={0.75} sx={{ flex: 1, alignItems: "center" }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: isToday ? "text.primary" : "text.secondary",
-                      fontWeight: isToday ? 700 : 400,
-                    }}
-                  >
-                    {WEEKDAY_LETTERS[index]}
-                  </Typography>
-                  <Box
-                    sx={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: "50%",
-                      border: "2px solid",
-                      // El día de hoy lleva un anillo para ubicarse rápido
-                      outline: isToday ? "2px solid" : "none",
-                      outlineColor: "primary.main",
-                      outlineOffset: 2,
-                      ...styleFor[status],
-                    }}
-                  />
-                </Stack>
+                {/* ButtonBase lo hace enfocable con teclado además de
+                    tocable, para que el detalle sea accesible sin mouse */}
+                <ButtonBase
+                  focusRipple
+                  aria-label={`${WEEKDAY_LETTERS[index]}: ${detail}`}
+                  sx={{ flex: 1, borderRadius: 1, py: 0.5 }}
+                >
+                  <Stack spacing={0.75} sx={{ flex: 1, alignItems: "center" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: isToday ? "primary.main" : "text.secondary",
+                        fontWeight: isToday ? 700 : 400,
+                      }}
+                    >
+                      {WEEKDAY_LETTERS[index]}
+                    </Typography>
+                    <Box
+                      sx={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        border: "2px solid",
+                        // Anillo alrededor del día de hoy
+                        outline: isToday ? "2px solid" : "none",
+                        outlineColor: "primary.main",
+                        outlineOffset: 2,
+                        ...dotStyle[status],
+                      }}
+                    />
+                  </Stack>
+                </ButtonBase>
               </Tooltip>
             );
           })}
         </Stack>
 
         <Typography variant="caption" color="text.secondary">
-          {fullDays} de {elapsed} días completados
+          Completaste {fullDays} de {counted} días
         </Typography>
       </CardContent>
     </Card>

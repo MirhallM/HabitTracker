@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { HabitFrequency } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { computeStreak, dayIndex } from '../common/streaks.js';
-
-const MS_PER_DAY = 86_400_000;
+import { HabitsService } from '../habits/habits.service.js';
+import {
+  computeStreak,
+  dayIndex,
+  periodRange,
+  type Frequency,
+} from '../common/streaks.js';
 
 function startOfDay(value: string | Date) {
   const d = new Date(value);
@@ -21,47 +26,58 @@ function dayKey(date: Date) {
 
 @Injectable()
 export class StatisticsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly habitsService: HabitsService,
+  ) {}
 
   async summary(userId: string) {
-    const today = startOfDay(new Date());
-    const tomorrow = new Date(today.getTime() + MS_PER_DAY);
+    const [habits, activityDates] = await Promise.all([
+      this.habitsService.findAllForUser(userId),
+      this.prisma.habitRecord.findMany({
+        where: { userId, completed: true },
+        select: { date: true },
+      }),
+    ]);
 
-    const [totalHabits, activeHabits, completedToday, activityDates] =
-      await Promise.all([
-        this.prisma.habit.count({ where: { userId } }),
-        this.prisma.habit.count({ where: { userId, active: true } }),
-        this.prisma.habitRecord.count({
-          where: {
-            userId,
-            completed: true,
-            date: { gte: today, lt: tomorrow },
-          },
-        }),
-        this.prisma.habitRecord.findMany({
-          where: { userId, completed: true },
-          select: { date: true },
-        }),
-      ]);
+    const active = habits.filter((h) => h.active);
+    const today = startOfDay(new Date());
+
+    // Un hábito "vence hoy" si hoy es el último día de su período actual.
+    // Los diarios siempre; los semanales solo el domingo; los personalizados
+    // solo al cerrar su ventana. Así un semanal recién iniciado el lunes
+    // no aparece como pendiente toda la semana.
+    const dueToday = active.filter((habit) => {
+      const { end } = periodRange(today, habit.frequency as Frequency, {
+        intervalDays: habit.intervalDays,
+        startDate: habit.startDate,
+      });
+      const lastDay = new Date(end);
+      lastDay.setDate(lastDay.getDate() - 1);
+      return lastDay.getTime() === today.getTime();
+    });
+
+    const completedDueToday = dueToday.filter(
+      (h) => h.streak.completedInCurrentPeriod,
+    ).length;
 
     // Racha de cuenta: días consecutivos en los que se completó ALGO.
-    // Siempre diaria, sin importar la frecuencia de cada hábito.
     const activityStreak = computeStreak(
       activityDates.map((r) => dayIndex(r.date)),
       dayIndex(new Date()),
     );
 
-    // % de cumplimiento de hoy sobre los hábitos activos
     const completionRate =
-      activeHabits === 0
+      dueToday.length === 0
         ? 0
-        : Math.round((completedToday / activeHabits) * 100);
+        : Math.round((completedDueToday / dueToday.length) * 100);
 
     return {
-      totalHabits,
-      activeHabits,
-      finishedHabits: totalHabits - activeHabits,
-      completedToday,
+      totalHabits: habits.length,
+      activeHabits: active.length,
+      finishedHabits: habits.length - active.length,
+      dueToday: dueToday.length,
+      completedDueToday,
       completionRate,
       activeDaysStreak: activityStreak.currentStreak,
       bestActiveDaysStreak: activityStreak.bestStreak,
@@ -84,28 +100,50 @@ export class StatisticsService {
     return this.completionsFrom(userId, from, 30);
   }
 
-  // Cuántos hábitos se completaron cada día, desde `from`, por `days` días.
-  // Devuelve TODOS los días del rango, incluidos los que tienen 0, para que
-  // el frontend pueda graficar directo sin rellenar huecos.
+  // Por cada día devuelve cuántos hábitos se cumplieron y cuántos
+  // correspondían. Solo se consideran los hábitos DIARIOS: un semanal
+  // o personalizado no pertenece a un día concreto, así que incluirlos
+  // distorsionaría el cálculo de "día completo".
   private async completionsFrom(userId: string, from: Date, days: number) {
-    const records = await this.prisma.habitRecord.findMany({
-      where: { userId, completed: true, date: { gte: from } },
-      select: { date: true },
-    });
+    const [records, dailyHabits] = await Promise.all([
+      this.prisma.habitRecord.findMany({
+        where: { userId, completed: true, date: { gte: from } },
+        select: { date: true, habitId: true },
+      }),
+      this.prisma.habit.findMany({
+        where: { userId, frequency: HabitFrequency.daily },
+        select: { id: true, startDate: true, endDate: true },
+      }),
+    ]);
+
+    const dailyIds = new Set(dailyHabits.map((h) => h.id));
 
     const counts = new Map<string, number>();
     for (const record of records) {
+      if (!dailyIds.has(record.habitId)) continue;
       const key = dayKey(record.date);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
 
-    const result: { date: string; completed: number }[] = [];
+    const result: { date: string; completed: number; expected: number }[] = [];
+
     for (let i = 0; i < days; i++) {
       const d = new Date(from);
       d.setDate(d.getDate() + i);
+      const dayStart = startOfDay(d);
       const key = dayKey(d);
-      result.push({ date: key, completed: counts.get(key) ?? 0 });
+
+      // Un hábito "correspondía" ese día si ya había iniciado
+      // y todavía no había terminado.
+      const expected = dailyHabits.filter((habit) => {
+        if (startOfDay(habit.startDate) > dayStart) return false;
+        if (habit.endDate && startOfDay(habit.endDate) < dayStart) return false;
+        return true;
+      }).length;
+
+      result.push({ date: key, completed: counts.get(key) ?? 0, expected });
     }
+
     return result;
   }
 }

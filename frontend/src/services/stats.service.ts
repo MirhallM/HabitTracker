@@ -4,7 +4,8 @@ export type StatsSummary = {
   totalHabits: number;
   activeHabits: number;
   finishedHabits: number;
-  completedToday: number;
+  dueToday: number;
+  completedDueToday: number;
   completionRate: number;
   activeDaysStreak: number;
   bestActiveDaysStreak: number;
@@ -14,6 +15,7 @@ export type StatsSummary = {
 export type DailyCompletion = {
   date: string;
   completed: number;
+  expected: number;
 };
 
 export function getSummary() {

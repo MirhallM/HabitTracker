@@ -48,8 +48,9 @@ export function formatWeekRange(value: Date | string) {
 
 export function daysLeftLabel(value: Date | string) {
   const days = daysLeftInWeek(value);
-  if (days === 1) return "Último día";
-  return `Quedan ${days} días`;
+  if (days === 1) return "Vence hoy";
+  if (days === 2) return "Vence mañana";
+  return `Vencen en ${days} días`;
 }
 
 export function capitalize(text: string) {
@@ -69,4 +70,46 @@ export function formatLongDate(value: Date | string) {
 // Evita el "1 días"
 export function pluralizeDays(count: number) {
   return count === 1 ? "1 día" : `${count} días`;
+}
+
+// "1 de 1 completado" / "2 de 3 completados"
+export function completedLabel(done: number, total: number) {
+  return `${done} de ${total} completado${done === 1 ? "" : "s"}`;
+}
+
+export function dayIndexOf(value: Date | string) {
+  return Math.round(startOfDay(value).getTime() / MS_PER_DAY);
+}
+
+// Último día de la ventana actual de un hábito "cada N días".
+// Replica el anclaje que usa el backend: las ventanas se cuentan
+// desde la fecha de inicio del hábito, no desde el calendario.
+export function customPeriodEnd(startDate: string, intervalDays: number) {
+  const today = dayIndexOf(new Date());
+  const anchor = dayIndexOf(startDate);
+  const windowStart =
+    anchor + Math.floor((today - anchor) / intervalDays) * intervalDays;
+  return windowStart + intervalDays - 1;
+}
+
+// Etiqueta para hábitos personalizados: cuánto queda de su ventana actual.
+export function customDueLabel(
+  startDate: string,
+  intervalDays: number | null,
+  done: boolean,
+) {
+  if (!intervalDays) return null;
+
+  const lastDay = customPeriodEnd(startDate, intervalDays);
+  const daysLeft = lastDay - dayIndexOf(new Date());
+
+  if (done) {
+    // Ya cumplido: lo útil es cuándo vuelve a tocar
+    const nextIn = daysLeft + 1;
+    return nextIn === 1 ? "Vuelve mañana" : `Vuelve en ${nextIn} días`;
+  }
+
+  if (daysLeft === 0) return "Vence hoy";
+  if (daysLeft === 1) return "Vence mañana";
+  return `Vence en ${daysLeft} días`;
 }

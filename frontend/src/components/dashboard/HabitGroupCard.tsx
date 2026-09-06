@@ -10,6 +10,7 @@ import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import LocalFireDepartmentRounded from "@mui/icons-material/LocalFireDepartmentRounded";
+import { completedLabel, customDueLabel } from "@/lib/dates";
 import type { Habit } from "@/types/habit";
 
 const priorityColor: Record<string, string> = {
@@ -33,6 +34,15 @@ type RowProps = {
 function HabitRow({ habit, onToggle, isBusy }: RowProps) {
   const done = habit.streak.completedInCurrentPeriod;
 
+  // Solo los personalizados llevan etiqueta de vencimiento: los diarios
+  // se entienden solos y los semanales la tienen a nivel de grupo.
+  const dueLabel =
+    habit.frequency === "custom"
+      ? customDueLabel(habit.startDate, habit.intervalDays, done)
+      : null;
+
+  const isUrgent = dueLabel === "Vence hoy" || dueLabel === "Vence mañana";
+
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: "center", py: 0.5 }}>
       <Checkbox
@@ -55,17 +65,28 @@ function HabitRow({ habit, onToggle, isBusy }: RowProps) {
         />
       </Tooltip>
 
-      <Typography
-        variant="body2"
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          textDecoration: done ? "line-through" : "none",
-          color: done ? "text.secondary" : "text.primary",
-        }}
-      >
-        {habit.name}
-      </Typography>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            textDecoration: done ? "line-through" : "none",
+            color: done ? "text.secondary" : "text.primary",
+          }}
+        >
+          {habit.name}
+        </Typography>
+        {dueLabel && (
+          <Typography
+            variant="caption"
+            sx={{
+              color: isUrgent && !done ? "warning.main" : "text.secondary",
+              fontWeight: isUrgent && !done ? 600 : 400,
+            }}
+          >
+            {dueLabel}
+          </Typography>
+        )}
+      </Box>
 
       {habit.streak.currentStreak > 0 && (
         <Chip
@@ -83,6 +104,8 @@ function HabitRow({ habit, onToggle, isBusy }: RowProps) {
 type Props = {
   title: string;
   subtitle?: string | null;
+  // Resalta el subtítulo cuando el período está por cerrar
+  urgentSubtitle?: boolean;
   habits: Habit[];
   onToggle: (habit: Habit, completed: boolean) => void;
   busyId: string | null;
@@ -91,6 +114,7 @@ type Props = {
 export default function HabitGroupCard({
   title,
   subtitle,
+  urgentSubtitle,
   habits,
   onToggle,
   busyId,
@@ -99,8 +123,8 @@ export default function HabitGroupCard({
   const allDone = done === habits.length;
 
   return (
-    <Card>
-      <CardContent>
+    <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <CardContent sx={{ flex: 1 }}>
         <Stack
           direction="row"
           spacing={1}
@@ -110,12 +134,22 @@ export default function HabitGroupCard({
             mb: 1,
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
+          {/* minHeight iguala el encabezado entre tarjetas con y sin subtítulo */}
+          <Box sx={{ minWidth: 0, minHeight: 44 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color:
+                    urgentSubtitle && !allDone
+                      ? "warning.main"
+                      : "text.secondary",
+                  fontWeight: urgentSubtitle && !allDone ? 600 : 400,
+                }}
+              >
                 {subtitle}
               </Typography>
             )}
@@ -130,7 +164,7 @@ export default function HabitGroupCard({
               color: allDone ? "success.main" : "text.secondary",
             }}
           >
-            {done} / {habits.length} completados
+            {completedLabel(done, habits.length)}
           </Typography>
         </Stack>
 

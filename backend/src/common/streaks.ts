@@ -74,3 +74,44 @@ export function computeStreak(periods: number[], currentPeriod: number) {
 
   return { currentStreak, bestStreak, completedInCurrentPeriod };
 }
+
+// Convierte un índice de día de vuelta a Date (medianoche local).
+// Usa setDate en vez de aritmética con milisegundos para que los
+// cambios de horario y los saltos de mes se manejen correctamente.
+function dateFromDayIndex(index: number): Date {
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  base.setDate(base.getDate() + (index - dayIndex(base)));
+  return base;
+}
+
+// Devuelve [start, end) del período al que pertenece la fecha, usando
+// exactamente el mismo anclaje que periodIndex.
+export function periodRange(
+  value: Date | string,
+  frequency: Frequency,
+  options: { intervalDays?: number | null; startDate?: Date | string } = {},
+): { start: Date; end: Date } {
+  const day = dayIndex(value);
+  let startDay: number;
+  let length: number;
+
+  if (frequency === 'weekly') {
+    // Inverso de floor((day + 3) / 7): la semana W empieza en 7W - 3
+    startDay = Math.floor((day + 3) / 7) * 7 - 3;
+    length = 7;
+  } else if (frequency === 'custom') {
+    const interval = options.intervalDays ?? 1;
+    const anchor = options.startDate ? dayIndex(options.startDate) : 0;
+    startDay = anchor + Math.floor((day - anchor) / interval) * interval;
+    length = interval;
+  } else {
+    startDay = day;
+    length = 1;
+  }
+
+  return {
+    start: dateFromDayIndex(startDay),
+    end: dateFromDayIndex(startDay + length),
+  };
+}

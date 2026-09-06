@@ -25,7 +25,12 @@ import {
   type StatsSummary,
   type DailyCompletion,
 } from "@/services/stats.service";
-import { formatLongDate, formatWeekRange, daysLeftLabel } from "@/lib/dates";
+import {
+  formatLongDate,
+  formatWeekRange,
+  daysLeftLabel,
+  daysLeftInWeek,
+} from "@/lib/dates";
 import { ApiError } from "@/lib/api";
 import type { Habit } from "@/types/habit";
 
@@ -105,21 +110,32 @@ export default function DashboardPage() {
   }
 
   const activeHabits = habits.filter((h) => h.active);
-  const dailyHabitCount = activeHabits.filter(
-    (h) => h.frequency === "daily",
-  ).length;
   const now = new Date();
+
+  const daysLeft = daysLeftInWeek(now);
 
   // Los semanales comparten la misma ventana (lunes a domingo), por eso
   // llevan subtítulo. Los personalizados tienen ventanas distintas cada uno.
   const groups = [
-    { key: "daily", title: "Diarios", subtitle: null as string | null },
+    {
+      key: "daily",
+      title: "Diarios",
+      subtitle: null as string | null,
+      urgent: false,
+    },
     {
       key: "weekly",
       title: "Semanales",
       subtitle: `${formatWeekRange(now)} · ${daysLeftLabel(now)}`,
+      // Urgente cuando queda hoy o mañana
+      urgent: daysLeft <= 2,
     },
-    { key: "custom", title: "Personalizados", subtitle: null as string | null },
+    {
+      key: "custom",
+      title: "Personalizados",
+      subtitle: null as string | null,
+      urgent: false,
+    },
   ]
     .map((group) => ({
       ...group,
@@ -177,8 +193,8 @@ export default function DashboardPage() {
             sx={{ maxWidth: 720 }}
           >
             <TodayProgressCard
-              completed={stats.completedToday}
-              total={stats.activeHabits}
+              completed={stats.completedDueToday}
+              total={stats.dueToday}
               percent={stats.completionRate}
             />
             <StreakCard
@@ -242,7 +258,6 @@ export default function DashboardPage() {
                   md: "repeat(auto-fit, minmax(260px, 1fr))",
                 },
                 gap: 3,
-                alignItems: "start",
               }}
             >
               {groups.map((group) => (
@@ -250,6 +265,7 @@ export default function DashboardPage() {
                   key={group.key}
                   title={group.title}
                   subtitle={group.subtitle}
+                  urgentSubtitle={group.urgent}
                   habits={group.habits}
                   onToggle={handleToggle}
                   busyId={busyId}
@@ -258,9 +274,7 @@ export default function DashboardPage() {
             </Box>
           )}
 
-          {week.length > 0 && (
-            <WeekSummaryCard days={week} dailyHabitCount={dailyHabitCount} />
-          )}
+          {week.length > 0 && <WeekSummaryCard days={week} />}
         </>
       )}
 

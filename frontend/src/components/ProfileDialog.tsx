@@ -131,7 +131,7 @@ export default function ProfileDialog({ open, onClose }: Props) {
               >
                 <Typography variant="body2">Hoy</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {stats.completedToday} / {stats.activeHabits} hábitos
+                  {stats.completedDueToday} / {stats.dueToday} hábitos
                 </Typography>
               </Stack>
               <LinearProgress
