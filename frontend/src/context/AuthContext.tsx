@@ -10,12 +10,7 @@ import {
 } from "react";
 import { api } from "@/lib/api";
 import { clearToken, getToken, setToken } from "@/lib/auth-storage";
-
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-};
+import type { User } from "@/types/user";
 
 type AuthResponse = {
   accessToken: string;
@@ -24,11 +19,12 @@ type AuthResponse = {
 
 type AuthContextValue = {
   user: User | null;
-  // true mientras se verifica si hay sesión guardada al cargar la app
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  // Para que otras pantallas actualicen el usuario sin recargar la app
+  setUser: (user: User) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await api<User>("/users/me");
         if (!cancelled) setUser(me);
       } catch {
-        clearToken(); // token vencido o inválido
+        clearToken();
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -58,16 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     void loadSession();
 
-    // Si el componente se desmonta antes de que responda el backend,
-    // evitamos actualizar estado de un componente que ya no existe.
     return () => {
       cancelled = true;
     };
-
-    api<User>("/users/me")
-      .then(setUser)
-      .catch(() => clearToken()) // token vencido o inválido
-      .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -99,13 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, register, logout, setUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Hook para consumir el contexto desde cualquier componente cliente.
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

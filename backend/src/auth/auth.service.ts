@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import type { User } from '@prisma/client';
 import { UsersService } from '../users/users.service.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
@@ -31,7 +32,7 @@ export class AuthService {
       salt,
     });
 
-    return this.buildAuthResponse(user.id, user.email, user.name);
+    return this.buildAuthResponse(user);
   }
 
   async login(dto: LoginDto) {
@@ -42,11 +43,17 @@ export class AuthService {
     if (!passwordMatches)
       throw new UnauthorizedException('Credenciales inválidas');
 
-    return this.buildAuthResponse(user.id, user.email, user.name);
+    return this.buildAuthResponse(user);
   }
 
-  private buildAuthResponse(userId: string, email: string, name: string) {
-    const accessToken = this.jwtService.sign({ sub: userId, email });
-    return { accessToken, user: { id: userId, email, name } };
+  // Devuelve el usuario completo (sin password ni salt) en vez de solo
+  // id/email/name, para que el frontend reciba siempre la misma forma
+  // de objeto ya sea del login o de GET /users/me.
+  private buildAuthResponse(user: User) {
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+    });
+    return { accessToken, user: this.usersService.toSafeUser(user) };
   }
 }
