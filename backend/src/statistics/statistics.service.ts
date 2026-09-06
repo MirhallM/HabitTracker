@@ -69,21 +69,25 @@ export class StatisticsService {
     };
   }
 
+  // Semana calendario actual (lunes a domingo), consistente con cómo
+  // periodIndex agrupa los hábitos semanales en streaks.ts
   weekly(userId: string) {
-    return this.completionsByDay(userId, 7);
+    const from = startOfDay(new Date());
+    const weekday = from.getDay(); // 0 = domingo
+    from.setDate(from.getDate() + (weekday === 0 ? -6 : 1 - weekday));
+    return this.completionsFrom(userId, from, 7);
   }
 
   monthly(userId: string) {
-    return this.completionsByDay(userId, 30);
+    const from = startOfDay(new Date());
+    from.setDate(from.getDate() - 29);
+    return this.completionsFrom(userId, from, 30);
   }
 
-  // Cuántos hábitos se completaron cada día en los últimos N días.
+  // Cuántos hábitos se completaron cada día, desde `from`, por `days` días.
   // Devuelve TODOS los días del rango, incluidos los que tienen 0, para que
   // el frontend pueda graficar directo sin rellenar huecos.
-  private async completionsByDay(userId: string, days: number) {
-    const from = startOfDay(new Date());
-    from.setDate(from.getDate() - (days - 1));
-
+  private async completionsFrom(userId: string, from: Date, days: number) {
     const records = await this.prisma.habitRecord.findMany({
       where: { userId, completed: true, date: { gte: from } },
       select: { date: true },
