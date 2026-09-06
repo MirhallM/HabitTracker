@@ -134,11 +134,7 @@ export default function LoginPage() {
                 sx={{ textAlign: "center" }}
               >
                 ¿No tienes usuario?{" "}
-                <MuiLink
-                  component={Link}
-                  href="/register"
-                  sx={{ fontWeight: 500 }}
-                >
+                <MuiLink component={Link} href="/" sx={{ fontWeight: 500 }}>
                   Regístrate
                 </MuiLink>
               </Typography>
