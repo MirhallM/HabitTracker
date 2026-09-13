@@ -5,9 +5,13 @@ import { HabitsService } from '../habits/habits.service.js';
 import {
   computeStreak,
   dayIndex,
+  periodIndex,
   periodRange,
   type Frequency,
 } from '../common/streaks.js';
+
+// Ventana que cubre el desglose por hábito y las gráficas mensuales.
+const WINDOW_DAYS = 30;
 
 function startOfDay(value: string | Date) {
   const d = new Date(value);
@@ -29,6 +33,13 @@ function countsOnDay(
   if (habit.endDate && startOfDay(habit.endDate) < dayStart) return false;
   if (habit.archivedAt && startOfDay(habit.archivedAt) <= dayStart) return false;
   return true;
+}
+
+// Primer día de la ventana de 30 días que termina hoy.
+function windowStart() {
+  const from = startOfDay(new Date());
+  from.setDate(from.getDate() - (WINDOW_DAYS - 1));
+  return from;
 }
 
 // Clave legible "YYYY-MM-DD" en hora local, para las gráficas.
@@ -111,9 +122,94 @@ export class StatisticsService {
   }
 
   monthly(userId: string) {
-    const from = startOfDay(new Date());
-    from.setDate(from.getDate() - 29);
-    return this.completionsFrom(userId, from, 30);
+    return this.completionsFrom(userId, windowStart(), WINDOW_DAYS);
+  }
+
+  // Rendimiento de cada hábito ACTIVO en los últimos 30 días, contado en
+  // PERÍODOS y no en días: un semanal cumplido 3 de 4 semanas es 75%, aunque
+  // solo tenga 3 registros en el mes. Por eso esto no se puede derivar de
+  // /monthly, que agrega entre todos los diarios sin separar por hábito.
+  async byHabit(userId: string) {
+    const [habits, records] = await Promise.all([
+      // Ya trae la racha calculada; no la recalculamos aquí.
+      this.habitsService.findAllForUser(userId),
+      this.prisma.habitRecord.findMany({
+        where: { userId, completed: true },
+        select: { habitId: true, date: true },
+      }),
+    ]);
+
+    const datesByHabit = new Map<string, Date[]>();
+    for (const record of records) {
+      const list = datesByHabit.get(record.habitId) ?? [];
+      list.push(record.date);
+      datesByHabit.set(record.habitId, list);
+    }
+
+    const from = windowStart();
+    const today = startOfDay(new Date());
+
+    return habits
+      .filter((habit) => habit.archivedAt === null)
+      .map((habit) => {
+        const frequency = habit.frequency as Frequency;
+        const options = {
+          intervalDays: habit.intervalDays,
+          startDate: habit.startDate,
+        };
+
+        const donePeriods = new Set(
+          (datesByHabit.get(habit.id) ?? []).map((date) =>
+            periodIndex(date, frequency, options),
+          ),
+        );
+
+        let expected = 0;
+        let completed = 0;
+        const seen = new Set<number>();
+
+        // Recorremos los días de la ventana y nos quedamos con un día por
+        // período. Es más simple —y usa las mismas funciones— que invertir
+        // periodIndex para reconstruir el rango de cada período.
+        for (let i = 0; i < WINDOW_DAYS; i++) {
+          const day = new Date(from);
+          day.setDate(day.getDate() + i);
+
+          const period = periodIndex(day, frequency, options);
+          if (seen.has(period)) continue;
+          seen.add(period);
+
+          const { end } = periodRange(day, frequency, options);
+          const lastDay = new Date(end);
+          lastDay.setDate(lastDay.getDate() - 1);
+
+          // El período en curso todavía no venció: contarlo como incumplido
+          // castigaría una semana que apenas va por el martes.
+          if (lastDay > today) continue;
+
+          // Mismo criterio que las gráficas: el hábito tenía que existir,
+          // no haber terminado y no estar archivado cuando el período venció.
+          if (!countsOnDay(habit, lastDay)) continue;
+
+          expected++;
+          if (donePeriods.has(period)) completed++;
+        }
+
+        return {
+          habitId: habit.id,
+          name: habit.name,
+          category: habit.category,
+          frequency: habit.frequency,
+          priority: habit.priority,
+          completed,
+          expected,
+          // 0 cuando no venció nada: la UI lo muestra como "sin datos",
+          // no como un 0% de cumplimiento.
+          rate: expected === 0 ? 0 : Math.round((completed / expected) * 100),
+          currentStreak: habit.streak.currentStreak,
+          bestStreak: habit.streak.bestStreak,
+        };
+      });
   }
 
   // Por cada día devuelve cuántos hábitos se cumplieron y cuántos

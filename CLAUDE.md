@@ -31,8 +31,8 @@ estadísticas, sin volverse un juego.
   ruta `v16-appRouter`) + Emotion
 - **Zod 4.5.4** para validación de formularios (requisito explícito del ingeniero, solo frontend)
 - ESLint 9 con `eslint-config-next`, TypeScript 5
-- **No hay librería de gráficas instalada.** `theme.ts` exporta `chartColors` reservado para
-  cuando se agregue (Recharts o MUI X Charts), pero hoy nadie lo consume.
+- **MUI X Charts 9.13.0** (`@mui/x-charts`, licencia MIT) para las gráficas de `/statistics`.
+  Las series usan `chartColors` de `theme.ts`, nunca colores inventados.
 - **No hay react-hook-form, Redux, Zustand ni React Query.** Ver §10.
 
 **Backend** — `backend/` · puerto 3001
@@ -82,7 +82,7 @@ HabitTracker/
         │       └── statistics/  settings/
         ├── components/           # UI reutilizable (ver §8)
         ├── context/AuthContext.tsx
-        ├── lib/                  # api.ts (cliente HTTP), auth-storage.ts, dates.ts
+        ├── lib/                  # api.ts, auth-storage.ts, dates.ts, habit-meta.ts, habit-filters.ts
         ├── services/             # una función por endpoint, tipada
         ├── schemas/              # esquemas Zod
         ├── types/                # espejo de los modelos de Prisma
@@ -162,6 +162,7 @@ además `streak`, que el backend agrega pero no está en la tabla.
 | GET | `/statistics/summary` | Totales, vencimientos de hoy, racha de cuenta |
 | GET | `/statistics/weekly` | 7 días, lunes→domingo, `{ date, completed, expected }` |
 | GET | `/statistics/monthly` | Últimos 30 días, mismo shape |
+| GET | `/statistics/by-habit` | Rendimiento de cada hábito **activo** en 30 días, contado en períodos |
 
 Todo excepto `/` y `/auth/*` está protegido con `JwtAuthGuard` + `@CurrentUser()`, y **verifica
 dueño**: devuelve 403 si el recurso no pertenece al usuario del token.
@@ -184,6 +185,9 @@ dueño**: devuelve 403 si el recurso no pertenece al usuario del token.
   (sin hábitos, pestaña vacía, búsqueda sin resultados, filtros sin resultados).
 - **`/habits/new` y `/habits/[id]/edit`** — el mismo `HabitForm`; recibir un `habit` lo pone en
   modo edición.
+- **`/statistics`** — tres tarjetas de resumen (hábitos activos, racha de días activos,
+  cumplimiento a 30 días), gráfica de área del cumplimiento diario del último mes, corte por
+  frecuencia y desglose de rendimiento por hábito con selector de orden. Los 4 estados.
 - **Perfil** — `ProfileDialog` (diálogo flotante desde el avatar del AppBar) con foto, datos,
   progreso de hoy, rachas y totales. `AvatarUpload` recorta y redimensiona la imagen en el
   navegador antes de subirla.
@@ -192,12 +196,9 @@ dueño**: devuelve 403 si el recurso no pertenece al usuario del token.
 
 ### Frontend — pendiente (NO documentar como hecho)
 
-- **`/statistics` es un placeholder**: solo un título y un párrafo describiendo lo que mostrará.
-  No consume nada. Falta la pantalla y las gráficas.
 - **`/settings` es un placeholder**: título y "Aquí podrás editar tu perfil". El botón
   "Editar perfil" del `ProfileDialog` lleva ahí. Falta el formulario (editar nombre).
-- Definidos pero **sin usar en la UI**: `getMonthly()`, `chartColors`. No son código muerto a
-  limpiar: son el andamio de la pantalla de Stats.
+- `HabitForm` sigue sin campos de fecha (ver abajo).
 - `HabitForm` **no envía `startDate` ni `endDate`** — no hay campos de fecha en la UI, así que
   todo hábito arranca hoy y no tiene fin, aunque el backend sí los acepta.
 - El icono de notificaciones del AppBar es decorativo ("próximamente").
@@ -264,6 +265,22 @@ semanal recién iniciado el lunes no aparece como pendiente toda la semana.
 **Ambas consideran solo hábitos `daily`**: un semanal o personalizado no pertenece a un día
 concreto, e incluirlo distorsionaría el "día completo". `expected` y `completed` por día usan
 **el mismo criterio** (`countsOnDay`), para que nunca aparezca un "3 de 2" en el resumen semanal.
+Por eso la gráfica de `/statistics` se rotula explícitamente **"Solo hábitos diarios"**, y los
+semanales y personalizados se cubren con `by-habit`.
+
+### Rendimiento por hábito (`/statistics/by-habit`)
+
+Cuenta en **períodos, no en días**: un semanal cumplido 3 de 4 semanas es 75%, aunque solo tenga
+3 registros en el mes. Por eso no se puede derivar de `/monthly`, que agrega entre todos los
+diarios sin separar por hábito.
+
+- Recorre los 30 días de la ventana quedándose con un día por período (más simple que invertir
+  `periodIndex`), y para cada período usa el mismo `countsOnDay` que las gráficas.
+- **El período en curso no cuenta**: contarlo como incumplido castigaría una semana que apenas
+  va por el martes. Solo entran los períodos cuyo último día ya pasó.
+- Solo devuelve hábitos **activos** — la pregunta es "cómo vengo", y un archivado ya no es parte
+  de la rutina. Su historial sigue intacto en `/habits`.
+- `expected: 0` significa **sin datos**, y la UI lo muestra como "—", nunca como 0%.
 
 ### Frecuencias, prioridades, categorías
 
@@ -272,8 +289,8 @@ concreto, e incluirlo distorsionaría el "día completo". `expected` y `complete
 - Prioridad: solo ordena y colorea. **No** cambia el cálculo. En el dashboard los pendientes van
   primero y dentro de cada bloque por prioridad (`high → medium → low`).
 - Categoría: **texto libre**, no enum. Se muestra como Chip.
-- `active: false` = hábito finalizado. Se ve en `/habits` con opacidad reducida y checkbox
-  deshabilitado; queda fuera del dashboard y de los conteos de "activos".
+- Archivado: `archivedAt !== null`. Vive en la pestaña **Archivados** de `/habits`, sin checkbox
+  y mostrando la mejor racha; queda fuera del dashboard y de los conteos de "activos".
 
 ### Archivar vs. eliminar — conceptos independientes
 

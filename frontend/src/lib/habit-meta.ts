@@ -53,18 +53,28 @@ export function comparePriority(a: string, b: string) {
 type FrequencyMeta = {
   // "Personalizado" — etiqueta corta para chips
   label: string;
+  // "Personalizados" — para títulos de grupo
+  pluralLabel: string;
   // "Cada cierto número de días" — texto explicativo para el formulario
   formLabel: string;
 };
 
 const FREQUENCY_META: Record<HabitFrequency, FrequencyMeta> = {
-  daily: { label: "Diario", formLabel: "Diario" },
-  weekly: { label: "Semanal", formLabel: "Semanal" },
+  daily: { label: "Diario", pluralLabel: "Diarios", formLabel: "Diario" },
+  weekly: { label: "Semanal", pluralLabel: "Semanales", formLabel: "Semanal" },
   custom: {
     label: "Personalizado",
+    pluralLabel: "Personalizados",
     formLabel: "Cada cierto número de días",
   },
 };
+
+// Orden en que se presentan las frecuencias, de la más exigente a la menos.
+export const FREQUENCY_ORDER: HabitFrequency[] = ["daily", "weekly", "custom"];
+
+export function frequencyMeta(frequency: string): FrequencyMeta {
+  return FREQUENCY_META[frequency as HabitFrequency] ?? FREQUENCY_META.daily;
+}
 
 // Etiqueta de frecuencia de un hábito concreto: los personalizados muestran
 // su intervalo real ("Cada 3 días") en vez de la palabra genérica.

@@ -69,6 +69,14 @@ export function formatLongDate(value: Date | string) {
   return capitalize(text);
 }
 
+// Las claves "YYYY-MM-DD" que devuelven /statistics/weekly y /monthly son días
+// LOCALES. new Date("2026-09-12") las interpretaría como medianoche UTC, que en
+// Honduras (UTC-6) cae el día anterior y correría todas las etiquetas un día.
+export function parseDayKey(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 // "12 sept" — compacto, para chips y etiquetas secundarias.
 export function formatShortDate(value: Date | string) {
   return new Date(value).toLocaleDateString("es-HN", {

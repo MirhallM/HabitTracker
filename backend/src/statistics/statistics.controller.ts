@@ -22,4 +22,9 @@ export class StatisticsController {
   monthly(@CurrentUser() user: { userId: string }) {
     return this.statisticsService.monthly(user.userId);
   }
+
+  @Get('by-habit')
+  byHabit(@CurrentUser() user: { userId: string }) {
+    return this.statisticsService.byHabit(user.userId);
+  }
 }
