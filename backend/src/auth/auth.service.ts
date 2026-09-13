@@ -10,8 +10,6 @@ import { UsersService } from '../users/users.service.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 
-const SALT_ROUNDS = 10;
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -24,13 +22,12 @@ export class AuthService {
     if (existing)
       throw new ConflictException('Ya existe una cuenta con ese correo');
 
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hashed = await bcrypt.hash(dto.password, salt);
-    const user = await this.usersService.create({
-      ...dto,
-      password: hashed,
-      salt,
-    });
+    // El hash vive en UsersService: es el mismo que usa el cambio de
+    // contraseña, así que la sal se genera en un solo lugar.
+    const { password, salt } = await this.usersService.hashPassword(
+      dto.password,
+    );
+    const user = await this.usersService.create({ ...dto, password, salt });
 
     return this.buildAuthResponse(user);
   }

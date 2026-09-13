@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { UsersService } from './users.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -22,5 +23,13 @@ export class UsersController {
   ) {
     const updated = await this.usersService.update(user.userId, dto);
     return this.usersService.toSafeUser(updated);
+  }
+
+  @Patch('me/password')
+  changePassword(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(user.userId, dto);
   }
 }

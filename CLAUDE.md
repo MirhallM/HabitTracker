@@ -151,6 +151,7 @@ además `streak`, que el backend agrega pero no está en la tabla.
 | POST | `/auth/login` | 200 explícito, mismo shape que register |
 | GET | `/users/me` | Usuario sin `password` ni `salt` |
 | PATCH | `/users/me` | `name` y/o `avatar` |
+| PATCH | `/users/me/password` | `{ currentPassword, newPassword }` — 401 si la actual no coincide |
 | POST | `/habits` | |
 | GET | `/habits` | Del usuario, `createdAt desc`, con `streak` |
 | GET | `/habits/:id` | Con `streak` |
@@ -188,6 +189,8 @@ dueño**: devuelve 403 si el recurso no pertenece al usuario del token.
 - **`/statistics`** — tres tarjetas de resumen (hábitos activos, racha de días activos,
   cumplimiento a 30 días), gráfica de área del cumplimiento diario del último mes, corte por
   frecuencia y desglose de rendimiento por hábito con selector de orden. Los 4 estados.
+- **`/settings`** — editar nombre y foto (reusa `AvatarUpload`), correo de solo lectura,
+  cambio de contraseña y cerrar sesión. Feedback con un `Snackbar` compartido.
 - **Perfil** — `ProfileDialog` (diálogo flotante desde el avatar del AppBar) con foto, datos,
   progreso de hoy, rachas y totales. `AvatarUpload` recorta y redimensiona la imagen en el
   navegador antes de subirla.
@@ -196,9 +199,6 @@ dueño**: devuelve 403 si el recurso no pertenece al usuario del token.
 
 ### Frontend — pendiente (NO documentar como hecho)
 
-- **`/settings` es un placeholder**: título y "Aquí podrás editar tu perfil". El botón
-  "Editar perfil" del `ProfileDialog` lleva ahí. Falta el formulario (editar nombre).
-- `HabitForm` sigue sin campos de fecha (ver abajo).
 - `HabitForm` **no envía `startDate` ni `endDate`** — no hay campos de fecha en la UI, así que
   todo hábito arranca hoy y no tiene fin, aunque el backend sí los acepta.
 - El icono de notificaciones del AppBar es decorativo ("próximamente").
@@ -324,6 +324,12 @@ registros, dentro de un `$transaction`. Es irreversible y **siempre requiere con
 - bcrypt con **sal explícita**: `genSalt(10)` → `hash(password, salt)` → se guarda la sal en su
   propia columna. Es técnicamente redundante (bcrypt ya la incrusta en el hash) pero es lo que
   pide el ingeniero. `bcrypt.compare()` no la necesita como argumento.
+- **`UsersService.hashPassword()` es el único lugar donde se hashea.** Lo usan el registro y el
+  cambio de contraseña; no volver a llamar `bcrypt.genSalt` en otro archivo.
+- **Cambiar contraseña exige la actual** (`bcrypt.compare` antes de rehashear): sin eso, un token
+  robado bastaría para secuestrar la cuenta. Se rechaza también si la nueva es igual a la actual.
+- **Limitación conocida:** cambiar la contraseña **no invalida los JWT ya emitidos** — siguen
+  vivos hasta que expiran. Haría falta un `tokenVersion` en `User` que `JwtStrategy` verifique.
 - Login y register devuelven **el mismo shape** que `GET /users/me` (usuario completo sin
   `password`/`salt`), para que el frontend no tenga que manejar dos formas de usuario.
 - El JWT lleva `{ sub, email }`; `JwtStrategy.validate` lo convierte en `{ userId, email }`,
@@ -380,7 +386,9 @@ con máximo 2.000.000 caracteres, y el body parser está en 2 MB para que quepa.
 
 `AppShell` · `AuthGuard` · `EmptyState` · `HabitCard` · `Link` · `ProfileDialog` ·
 `AvatarUpload` · `forms/{HabitForm, RegisterForm}` · `dashboard/{TodayProgressCard, StreakCard,
-HabitGroupCard, WeekSummaryCard}` · `habits/{HabitsToolbar, HabitFiltersPopover, HabitSortMenu}`.
+HabitGroupCard, WeekSummaryCard}` · `habits/{HabitsToolbar, HabitFiltersPopover, HabitSortMenu}` ·
+`statistics/{StatTile, MonthlyCompletionChart, FrequencyBreakdownCard, HabitBreakdownCard}` ·
+`settings/{ProfileSettingsCard, PasswordSettingsCard}`.
 
 **Fuentes únicas que hay que respetar** (existen para no volver a duplicar):
 
